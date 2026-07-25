@@ -13,7 +13,7 @@ on:
 
 jobs:
   integracao:
-    name: "Testes, analise e Docker"
+    name: "Testes, analise, Docker e Kubernetes"
     runs-on: ubuntu-latest
 
     steps:
@@ -55,6 +55,14 @@ jobs:
 
       - name: "Construir imagem Docker"
         run: docker build -t devops-api:test .
+
+      - name: "Configurar Kubeconform"
+        uses: bmuschko/setup-kubeconform@v1
+        with:
+          kubeconform-version: "0.7.0"
+
+      - name: "Validar manifesto Kubernetes"
+        run: kubeconform -strict -summary deployment.yaml
 
   entrega:
     name: "Publicacao no Docker Hub"
