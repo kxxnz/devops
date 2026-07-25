@@ -12,4 +12,4 @@ RUN pip install --no-cache-dir \
 
 COPY app/ .
 
-CMD ["python", "m", "uvicorn", "main:APP", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["python", "-m", "uvicorn", "main:APP", "--host", "0.0.0.0", "--port", "8001"]

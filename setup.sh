@@ -8,7 +8,7 @@ docker-compose down
 echo "Construindo a imagem do projeto..."
 docker-compose build
 
-echo "Subindo os containers..."
-docker-compose up
+echo "Iniciando os containers..."
+echo "Pressione Ctrl+C para encerrar."
 
-echo "Ambiente subido com sucesso!"
+docker-compose up

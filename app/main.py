@@ -6,7 +6,7 @@ from fastapi import FastAPI
 
 LISTA_TAREFAS = []
 APP = FastAPI()
-URL_NOTIFICACAO = os.getenv("URL_NOTIFICACAO", "http://127.0.0.1:8001/notificacao")
+URL_NOTIFICACAO = os.getenv("URL_NOTIFICACAO", "http://127.0.0.1:8002/notificacao")
 
 
 def nova_tarefa(id: int, titulo: str, descricao: str):
