@@ -158,3 +158,51 @@ jobs:
           tags: |
             ${{ vars.DOCKERHUB_USERNAME }}/devops-api:latest
             ${{ vars.DOCKERHUB_USERNAME }}/devops-api:${{ github.sha }}
+
+  implantacao:
+    name: "Implantacao no Kubernetes"
+    runs-on:
+      - self-hosted
+      - linux
+      - devops-deploy
+    needs: entrega
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+
+    steps:
+      - name: "Baixar o repositorio"
+        uses: actions/checkout@v4
+
+      - name: "Verificar cluster"
+        run: |
+          kubectl config use-context kind-devops-deploy
+          kubectl cluster-info
+
+      - name: "Aplicar manifesto"
+        run: kubectl apply -f deployment.yaml
+
+      - name: "Atualizar imagem das APIs"
+        env:
+          IMAGEM: ${{ vars.DOCKERHUB_USERNAME }}/devops-api:${{ github.sha }}
+        run: |
+          kubectl set image deployment/tarefas tarefas="${IMAGEM}"
+          kubectl set image deployment/notificacao notificacao="${IMAGEM}"
+
+      - name: "Aguardar implantacao"
+        run: |
+          kubectl rollout status deployment/tarefas --timeout=180s
+          kubectl rollout status deployment/notificacao --timeout=180s
+          kubectl rollout status deployment/gateway --timeout=180s
+
+      - name: "Exibir recursos"
+        if: always()
+        run: |
+          kubectl get deployments
+          kubectl get pods
+          kubectl get services
+
+      - name: "Exibir logs em caso de falha"
+        if: failure()
+        run: |
+          kubectl logs deployment/tarefas --tail=100 || true
+          kubectl logs deployment/notificacao --tail=100 || true
+          kubectl logs deployment/gateway --tail=100 || true
