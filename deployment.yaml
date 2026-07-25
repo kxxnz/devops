@@ -1,0 +1,213 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tarefas
+spec:
+  selector:
+    app: tarefas
+  ports:
+    - port: 8001
+      targetPort: 8001
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tarefas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tarefas
+  template:
+    metadata:
+      labels:
+        app: tarefas
+    spec:
+      containers:
+        - name: tarefas
+          image: jpwrlld/devops-api:latest
+          imagePullPolicy: Always
+          command:
+            - python
+            - -m
+            - uvicorn
+            - main:APP
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8001"
+          env:
+            - name: URL_NOTIFICACAO
+              value: http://gateway/notificacao
+            - name: LOG_LEVEL
+              value: INFO
+          ports:
+            - containerPort: 8001
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notificacao
+spec:
+  selector:
+    app: notificacao
+  ports:
+    - port: 8002
+      targetPort: 8002
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notificacao
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notificacao
+  template:
+    metadata:
+      labels:
+        app: notificacao
+    spec:
+      containers:
+        - name: notificacao
+          image: jpwrlld/devops-api:latest
+          imagePullPolicy: Always
+          command:
+            - python
+            - -m
+            - uvicorn
+            - notificacao:APP
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8002"
+          ports:
+            - containerPort: 8002
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8002
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8002
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-config
+data:
+  nginx.conf: |
+    events {}
+
+    http {
+        server {
+            listen 80;
+
+            location = / {
+                default_type text/plain;
+                return 200 "o gateway do pai ta online e roteando\n";
+            }
+
+            location /tarefas {
+                proxy_pass http://tarefas:8001;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+            }
+
+            location /notificacao {
+                proxy_pass http://notificacao:8002;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+            }
+
+            location /docs {
+                proxy_pass http://tarefas:8001/docs;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+            }
+
+            location /openapi.json {
+                proxy_pass http://tarefas:8001/openapi.json;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+            }
+        }
+    }
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+spec:
+  type: NodePort
+  selector:
+    app: gateway
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30080
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      containers:
+        - name: gateway
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: gateway-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: gateway-config
+          configMap:
+            name: gateway-config
