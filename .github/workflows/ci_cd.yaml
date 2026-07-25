@@ -29,5 +29,4 @@ jobs:
       - name: "Executar testes"
         env:
           PYTHONPATH: app
-        run: |
-          pytest tests/test_main.py tests/test_metricas.py -v
+        run: pytest -v
