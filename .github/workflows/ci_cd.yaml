@@ -1,0 +1,64 @@
+name: 'Pipeline 04/07/26'
+
+on:
+  pull_request:
+    branches: 
+      - main
+  # Habilita botão na interface Web para acionar manualmente a pipeline
+  workflow_dispatch:
+
+jobs:
+  integracao:
+    name: 'Integração'
+    runs-on: ubuntu-latest
+    steps:
+      # Equivalente a git clone
+      - uses: actions/checkout@v4
+      - name: 'Instalação de dependências'
+        run: pip install -r requirements.txt
+      - name: 'Testes unitários'
+        run: pytest
+      - name: 'Cobertura de código'
+        run: pytest --cov --cov-fail-under=80
+      - name: 'Análise estática'
+        run: bandit -r app/
+      - name: 'Linting'
+        run: pylint app/ || true
+  fossa:
+    needs: integracao
+    name: 'Análise de dependências e conformidade'
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: 'FOSSA'
+        uses: fossas/fossa-action@main
+        with:
+          api-key: ${{ secrets.FOSSA_API_KEY }}
+  entrega:
+    needs: [integracao, fossa]
+    name: 'Entrega'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Autenticação"
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: "Configurando QEMU"
+        uses: docker/setup-qemu-action@v3
+      - name: "Configurando buildx"
+        uses: docker/setup-buildx-action@v3
+      - name: "Build e push"
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: ${{ vars.DOCKERHUB_USERNAME }}/curso-devops:latest
+  implantacao:
+    runs-on: self-hosted
+    needs: entrega
+    name: 'Implantação'
+    steps:
+      - uses: actions/checkout@v4
+      - name: 'Aplicação do manifesto'
+        run: kubectl delete -f deployment.yaml && kubectl apply -f deployment.yaml
