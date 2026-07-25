@@ -9,7 +9,7 @@ on:
 
 jobs:
   integracao:
-    name: "Testes das APIs"
+    name: "Testes e cobertura"
     runs-on: ubuntu-latest
 
     steps:
@@ -30,3 +30,12 @@ jobs:
         env:
           PYTHONPATH: app
         run: pytest -v
+
+      - name: "Verificar cobertura"
+        env:
+          PYTHONPATH: app
+        run: |
+          pytest \
+            --cov=app \
+            --cov-report=term-missing \
+            --cov-fail-under=80
