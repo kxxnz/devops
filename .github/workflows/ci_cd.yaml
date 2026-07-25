@@ -135,8 +135,15 @@ jobs:
     steps:
       - name: "Baixar o repositorio"
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: "Analisar dependencias"
+      - name: "Enviar analise ao FOSSA"
+        uses: fossas/fossa-action@main
+        with:
+          api-key: ${{ secrets.FOSSA_API_KEY }}
+
+      - name: "Verificar politicas do FOSSA"
         uses: fossas/fossa-action@main
         with:
           api-key: ${{ secrets.FOSSA_API_KEY }}
