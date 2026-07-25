@@ -9,7 +9,7 @@ on:
 
 jobs:
   integracao:
-    name: "Testes e cobertura"
+    name: "Testes e analise de codigo"
     runs-on: ubuntu-latest
 
     steps:
@@ -39,3 +39,9 @@ jobs:
             --cov=app \
             --cov-report=term-missing \
             --cov-fail-under=80
+
+      - name: "Executar analise de seguranca"
+        run: bandit -r app/
+
+      - name: "Executar linting"
+        run: pylint app/ || true
