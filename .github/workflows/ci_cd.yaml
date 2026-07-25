@@ -9,7 +9,7 @@ on:
 
 jobs:
   integracao:
-    name: "Testes da API de tarefas"
+    name: "Testes das APIs"
     runs-on: ubuntu-latest
 
     steps:
@@ -26,7 +26,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: "Executar testes da API de tarefas"
+      - name: "Executar testes"
         env:
           PYTHONPATH: app
-        run: pytest tests/test_main.py -v
+        run: |
+          pytest tests/test_main.py tests/test_metricas.py -v
