@@ -1,0 +1,31 @@
+services:
+  gateway:
+    image: nginx:alpine
+    container_name: devops-gateway
+    ports:
+      - "8000:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - tarefas
+      - notificacao
+
+  tarefas:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: devops-tarefas
+    command: python -m uvicorn main:APP --host 0.0.0.0 --port 8001 --reload
+    environment:
+      - URL_NOTIFICACAO=http://gateway/notificacao
+    ports:
+      - "8001:8001"
+
+  notificacao:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: devops-notificacao
+    command: python -m uvicorn notificacao:APP --host 0.0.0.0 --port 8002 --reload
+    ports:
+      - "8002:8002"

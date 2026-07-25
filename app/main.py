@@ -6,6 +6,7 @@ from fastapi import FastAPI
 
 LISTA_TAREFAS = []
 APP = FastAPI()
+URL_NOTIFICACAO = os.getenv("URL_NOTIFICACAO", "http://127.0.0.1:8001/notificacao")
 
 
 def nova_tarefa(id: int, titulo: str, descricao: str):
@@ -95,7 +96,7 @@ def atualizar_tarefa_especifica(id: int, titulo: str, descricao: str, concluido:
             tarefa["descricao"] = descricao
             tarefa["concluido"] = concluido
 
-            
+
 
             return {"message": "Tarefa atualizada com sucesso."}
 
