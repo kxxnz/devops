@@ -9,7 +9,7 @@ on:
 
 jobs:
   integracao:
-    name: "Testes e analise de codigo"
+    name: "Testes, analise e Docker"
     runs-on: ubuntu-latest
 
     steps:
@@ -45,3 +45,9 @@ jobs:
 
       - name: "Executar linting"
         run: pylint app/ || true
+
+      - name: "Validar Docker Compose"
+        run: docker compose config --quiet
+
+      - name: "Construir imagem Docker"
+        run: docker build -t devops-api:test .
